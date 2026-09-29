@@ -28,7 +28,8 @@
   "scripts": {
     "build": "astro-scripts build \"src/**/*.ts\" && tsc -b",
     "build:ci": "astro-scripts build \"src/**/*.ts\"",
-    "dev": "astro-scripts dev \"src/**/*.ts\""
+    "dev": "astro-scripts dev \"src/**/*.ts\"",
+    "test": "astro-scripts test \"test/**/*.test.ts\""
   },
   "dependencies": {
     "@qwik.dev/partytown": "^0.14.4",

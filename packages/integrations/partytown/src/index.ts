@@ -18,6 +18,16 @@ function appendForwardSlash(str: string) {
 	return str.endsWith('/') ? str : str + '/';
 }
 
+// The upstream snippet reads `.active` on whatever `navigator.serviceWorker.register()` fulfills
+// with. Some environments (e.g. Playwright with `serviceWorkers: 'block'`) fulfill with
+// `undefined`, which throws instead of falling back to running scripts on the main thread.
+// The guard sends a missing registration to `fallback()` (`w`), like a rejected `register()` does.
+// https://github.com/withastro/astro/issues/18171
+const unguardedRegistrationCallback =
+	'.then((function(t){t.active?v():t.installing&&t.installing.addEventListener("statechange",(function(t){"activated"==t.target.state&&v()}))}),(function(t){console.error(t),w()}))';
+const guardedRegistrationCallback =
+	'.then((function(t){if(!t)return w();t.active?v():t.installing&&t.installing.addEventListener("statechange",(function(t){"activated"==t.target.state&&v()}))}),(function(t){console.error(t),w()}))';
+
 export default function createPlugin(options?: PartytownOptions): AstroIntegration {
 	let partytownSnippetHtml: string;
 	const partytownEntrypoint = resolve('@qwik.dev/partytown/package.json');
@@ -33,7 +43,10 @@ export default function createPlugin(options?: PartytownOptions): AstroIntegrati
 					...options?.config,
 					debug: options?.config?.debug ?? command === 'dev',
 				};
-				partytownSnippetHtml = partytownSnippet(partytownConfig);
+				partytownSnippetHtml = partytownSnippet(partytownConfig).replace(
+					unguardedRegistrationCallback,
+					guardedRegistrationCallback,
+				);
 				partytownSnippetHtml += recreateIFrameScript;
 				injectScript('head-inline', partytownSnippetHtml);
 			},
